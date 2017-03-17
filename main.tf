@@ -26,7 +26,7 @@ data "aws_subnet" "vpn_az" {
 
 data "aws_ami" "vpn-ami" {
   most_recent = true
-  name_regex = "ubuntu/images/ebs-ssd/ubuntu-xenial-16.04-amd64-server"
+  name_regex = "ubuntu-xenial-16.04-amd64-server"
   filter {
     name = "virtualization-type"
     values = ["hvm"]
@@ -42,11 +42,11 @@ data "aws_ami" "vpn-ami" {
 }
 
 resource "aws_eip" "vpn" {
-  vpn = "${var.vpc_conf["id"]}"
+  vpc = true
 }
 
 resource "aws_ebs_volume" "vpn" {
-  availability_zone = "${random_shuffle.nfs_az.result.0}"
+  availability_zone = "${random_shuffle.vpn_az.result.0}"
   type = "gp2"
   size = 10
   encrypted = true
@@ -79,7 +79,7 @@ data "template_file" "vpn-cloudinit" {
 
 resource "aws_launch_configuration" "vpn" {
   name_prefix = "${var.aws_conf["domain"]}-vpn-"
-  image_id = "${data.aws_ami.default.id}"
+  image_id = "${data.aws_ami.vpn-ami.id}"
   instance_type = "${var.aws_conf["instance_type"]}"
   key_name = "${var.aws_conf["key_name"]}"
   iam_instance_profile = "${aws_iam_instance_profile.node-profile.id}"
@@ -103,7 +103,7 @@ resource "aws_launch_configuration" "vpn" {
 resource "aws_autoscaling_group" "vpn" {
   name = "${var.aws_conf["domain"]}-vpn"
   launch_configuration = "${aws_launch_configuration.vpn.name}"
-  vpc_zone_identifier = ["${split(",", var.vpc_conf["subnets_public"])}"]
+  vpc_zone_identifier = ["${data.aws_subnet.vpn_az.id}"]
   min_size = 1
   max_size = 1
   desired_capacity = 1
@@ -150,6 +150,13 @@ resource "aws_security_group" "vpn" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port = 22
+    to_port = 22
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags {
     Name = "${var.aws_conf["domain"]}-vpn"
     Stack = "${var.aws_conf["domain"]}"
@@ -162,6 +169,7 @@ resource "aws_security_group" "vpn" {
 resource "aws_route53_record" "vpn" {
   zone_id = "${var.vpc_conf["zone_id"]}"
   name = "vpn.${var.aws_conf["domain"]}"
+  ttl = 60
   type = "A"
   records = ["${aws_eip.vpn.public_ip}"]
 

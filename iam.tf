@@ -3,15 +3,15 @@ resource "aws_iam_role" "node-role" {
   assume_role_policy = "${file("${path.module}/policies/default-role.json")}"
 }
 
-resource "aws_iam_user_policy" "user-default-policy" {
-  name = "${var.aws_conf["domain"]}-user-default-policy"
-  policy = "${file("${path.module}/policies/default-policy.json")}"
-  user = "${aws_iam_user.node-user.name}"
-}
-
 resource "aws_iam_role_policy" "node-default-policy" {
   name = "${var.aws_conf["domain"]}-vpn-default-policy"
   policy = "${file("${path.module}/policies/default-policy.json")}"
+  role = "${aws_iam_role.node-role.id}"
+}
+
+resource "aws_iam_role_policy" "node-eip-policy" {
+  name = "${var.aws_conf["domain"]}-vpn-eip-policy"
+  policy = "${file("${path.module}/policies/ec2-eip-policy.json")}"
   role = "${aws_iam_role.node-role.id}"
 }
 
@@ -23,12 +23,6 @@ data "template_file" "node-ebs-policy" {
     account = "${var.aws_conf["account_id"]}"
     vpc = "${var.vpc_conf["id"]}"
   }
-}
-
-resource "aws_iam_user_policy" "user-ebs-policy" {
-  name = "${var.aws_conf["domain"]}-user-ebs-policy"
-  policy = "${data.template_file.node-ebs-policy.rendered}"
-  user = "${aws_iam_user.node-user.name}"
 }
 
 resource "aws_iam_role_policy" "node-ebs-policy" {
@@ -55,12 +49,6 @@ data "template_file" "route53_policy" {
   }
 }
 
-resource "aws_iam_user_policy" "user-route53-policy" {
-  name = "${var.aws_conf["domain"]}-user-route53-policy"
-  policy = "${data.template_file.route53_policy.rendered}"
-  user = "${aws_iam_user.node-user.name}"
-}
-
 resource "aws_iam_role_policy" "route53" {
   name = "${var.aws_conf["domain"]}-vpn-route53-policy"
   policy = "${data.template_file.route53_policy.rendered}"
@@ -79,12 +67,6 @@ data "template_file" "role-kms" {
     aws_account_id = "${var.aws_conf["account_id"]}"
     ebs_kms_arn = "${aws_kms_key.ebs.arn}"
   }
-}
-
-resource "aws_iam_user_policy" "user-kms-policy" {
-  name = "${var.aws_conf["domain"]}-user-kms-policy"
-  policy = "${data.template_file.role-kms.rendered}"
-  user = "${aws_iam_user.node-user.name}"
 }
 
 resource "aws_iam_role_policy" "role-kms-policy" {
