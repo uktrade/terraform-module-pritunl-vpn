@@ -40,12 +40,9 @@ runcmd:
   }' > /tmp/route53_update.json &&
   aws route53 change-resource-record-sets --hosted-zone-id ${dns_zone_id} --change-batch file:///tmp/route53_update.json
 - mkdir -p /var/lib/mongodb
-- AWS_AZ=$(curl -Lfs http://169.254.169.254/latest/meta-data/placement/availability-zone)
-- EBS_VOLUME=$(aws ec2 describe-volumes --filters Name=status,Values=available,Name=tag:Name,Values=${cluster_id}-vpn,Name=tag:clusterid,Values=${cluster_id},Name=tag:host-type,Values=vpn --query 'Volumes[?AvailabilityZone==`'"$AWS_AZ"'`]' | jq -r '.[].VolumeId')
+- aws ec2 attach-volume --instance-id $INSTANCE_ID --volume-id ${ebs} --device /dev/xvdx
 - >
-  [ $(echo $EBS_VOLUME | grep -c -E vol-[0-9a-z]\{17\}) = 1 ] && aws ec2 attach-volume --instance-id $INSTANCE_ID --volume-id $EBS_VOLUME --device /dev/xvdx
-- >
-  while [ "$(aws ec2 describe-volumes --volume-ids $EBS_VOLUME | jq -r '.Volumes[].Attachments[] | select(.State == "attached") .InstanceId')" != "$INSTANCE_ID" ]; do
+  while [ "$(aws ec2 describe-volumes --volume-ids ${ebs} | jq -r '.Volumes[].Attachments[] | select(.State == "attached") .InstanceId')" != "$INSTANCE_ID" ]; do
     sleep 10
   done
 - mount /dev/xvdx /var/lib/mongodb && chown mongodb:mongodb /var/lib/mongodb

@@ -74,6 +74,7 @@ data "template_file" "vpn-cloudinit" {
     dns_zone_id = "${var.vpc_conf["zone_id"]}"
     cluster_id = "${var.aws_conf["domain"]}"
     eip = "${aws_eip.vpn.id}"
+    ebs = "${aws_ebs_volume.vpn.id}"
   }
 }
 
