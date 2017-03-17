@@ -1,0 +1,58 @@
+#cloud-config
+
+apt:
+  sources:
+    mongodb.list:
+      source: "deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse"
+      keyid: 42F3E95A2C4F08279C4960ADD68FA50FEA312927
+    pritunl.list:
+      source: "deb http://repo.pritunl.com/stable/apt xenial main"
+      keyid: 7568D9BB55FF9E5287D586017AE645C0CF8E292A
+
+package_update: true
+package_upgrade: true
+
+packages:
+- bind-utils
+- telnet
+- vim
+- epel-release
+- git
+- docker
+- mongodb-org
+- pritunl
+
+runcmd:
+- yum install -y python-pip jq
+- pip install --upgrade pip awscli
+- export AWS_DEFAULT_REGION=${aws_region}
+- INSTANCE_ID=$(curl -Lfs http://169.254.169.254/latest/meta-data/instance-id)
+- aws ec2 associate-address --instance-id $INSTANCE_ID --allocation-id ${eip}
+- >
+  echo '{
+    "Comment": "auto updated @ '$(date)'",
+    "Changes": [{
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "'$(curl -Lfs http://169.254.169.254/latest/meta-data/local-hostname)'",
+        "Type": "A",
+        "TTL": 60,
+        "ResourceRecords": [{
+          "Value": "'$(curl -Lfs http://169.254.169.254/latest/meta-data/local-ipv4)'"
+        }]
+      }
+    }]
+  }' > /tmp/route53_update.json &&
+  aws route53 change-resource-record-sets --hosted-zone-id ${dns_zone_id} --change-batch file:///tmp/route53_update.json
+- mkdir -p /var/lib/mongodb
+- AWS_AZ=$(curl -Lfs http://169.254.169.254/latest/meta-data/placement/availability-zone)
+- EBS_VOLUME=$(aws ec2 describe-volumes --filters Name=status,Values=available,Name=tag:Name,Values=${cluster_id}-vpn,Name=tag:clusterid,Values=${cluster_id},Name=tag:host-type,Values=vpn --query 'Volumes[?AvailabilityZone==`'"$AWS_AZ"'`]' | jq -r '.[].VolumeId')
+- >
+  [ $(grep -c -E vol-[0-9a-z]\{17\} <<< $NFS_EBS_VOLUME) = 1 ] && aws ec2 attach-volume --instance-id $INSTANCE_ID --volume-id $EBS_VOLUME --device /dev/xvdx
+- >
+  while [ "$(aws ec2 describe-volumes --volume-ids $EBS_VOLUME | jq -r '.Volumes[].Attachments[] | select(.State == "attached") .InstanceId')" != "$INSTANCE_ID" ]; do
+    sleep 10
+  done
+- mount /dev/xvdx /var/lib/mongodb
+- systemctl enable pritunl mongod
+- systemctl start pritunl mongod
