@@ -145,8 +145,8 @@ resource "aws_security_group" "vpn" {
   vpc_id = "${var.vpc_conf["id"]}"
 
   ingress {
-    from_port = 1492
-    to_port = 1492
+    from_port = 1194
+    to_port = 1194
     protocol = "udp"
     cidr_blocks = ["0.0.0.0/0"]
   }
