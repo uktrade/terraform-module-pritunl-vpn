@@ -102,7 +102,7 @@ resource "aws_launch_configuration" "vpn" {
 }
 
 resource "aws_autoscaling_group" "vpn" {
-  name = "${var.aws_conf["domain"]}-vpn"
+  name_prefix = "${var.aws_conf["domain"]}-vpn"
   launch_configuration = "${aws_launch_configuration.vpn.name}"
   vpc_zone_identifier = ["${data.aws_subnet.vpn_az.id}"]
   min_size = 1
