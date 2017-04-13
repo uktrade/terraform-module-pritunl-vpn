@@ -34,7 +34,7 @@ resource "aws_iam_role_policy" "node-ebs-policy" {
 resource "aws_iam_instance_profile" "node-profile" {
   name = "${var.aws_conf["domain"]}-vpn-profile"
   path = "/"
-  roles = ["${aws_iam_role.node-role.name}"]
+  role = "${aws_iam_role.node-role.name}"
 
   lifecycle {
     create_before_destroy = true
