@@ -159,13 +159,6 @@ resource "aws_security_group" "vpn" {
     /*security_groups = ["${var.vpc_conf["security_group"]}"]*/
   }
 
-  ingress {
-    from_port = 22
-    to_port = 22
-    protocol = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
   tags {
     Name = "${var.aws_conf["domain"]}-vpn"
     Stack = "${var.aws_conf["domain"]}"
