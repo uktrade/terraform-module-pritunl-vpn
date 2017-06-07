@@ -49,4 +49,10 @@ runcmd:
 - systemctl enable pritunl mongod
 - systemctl start pritunl mongod
 - PRITUNL_KEY=$(pritunl setup-key)
-- curl -Lkv -X PUT -H "content-type:application/json" -d '{"setup_key":"'"$PRITUNL_KEY"'","mongodb_uri":"mongodb://localhost:27017/pritunl"}' "https://vpn.${cluster_id}/setup/mongodb"
+- >
+  nc -zv localhost 443
+  while [ $? -ne 0 ]; do
+    sleep 30
+    nc -zv localhost 443
+  done
+  curl -Lkv -X PUT -H "content-type:application/json" -d '{"setup_key":"'"$PRITUNL_KEY"'","mongodb_uri":"mongodb://localhost:27017/pritunl"}' "https://vpn.${cluster_id}/setup/mongodb"
