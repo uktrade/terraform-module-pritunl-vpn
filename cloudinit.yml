@@ -3,8 +3,8 @@
 apt:
   sources:
     mongodb.list:
-      source: "deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.2 multiverse"
-      keyid: 42F3E95A2C4F08279C4960ADD68FA50FEA312927
+      source: "deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse"
+      keyid: 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
     pritunl.list:
       source: "deb http://repo.pritunl.com/stable/apt xenial main"
       keyid: 7568D9BB55FF9E5287D586017AE645C0CF8E292A
