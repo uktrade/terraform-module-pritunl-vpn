@@ -3,7 +3,7 @@
 apt:
   sources:
     mongodb.list:
-      source: "deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/3.6 multiverse"
+      source: "deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/4.0 multiverse"
       keyid: 2930ADAE8CAF5059EE73BB4B58712A2291FA4AD5
     pritunl.list:
       source: "deb http://repo.pritunl.com/stable/apt xenial main"
